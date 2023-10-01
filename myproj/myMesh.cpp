@@ -84,11 +84,67 @@ bool myMesh::readFile(std::string filename)
 		else if (t == "s") {}
 		else if (t == "f")
 		{
-			cout << "f"; 
-			while (myline >> u) cout << " " << atoi((u.substr(0, u.find("/"))).c_str());
+			cout << "f";
+			std::vector<int> indexes;
+
+			while (myline >> u)
+			{
+				int idx = atoi((u.substr(0, u.find("/"))).c_str());
+				cout << " " << idx;
+				indexes.push_back(idx);
+			}
 			cout << endl;
 
-			//myPoint3D A = points.at();
+			int firstPoint = indexes.at(0);
+			int lastPoint = firstPoint;
+			int currentPoint;
+			myHalfedge lastHEdge;
+
+			for (int i = 1; i < indexes.size(); i++)
+			{
+				currentPoint = indexes.at(i);
+				myHalfedge newHEdge;
+				myVertex newVertex;
+				myPoint3D newPoint;
+				myFace newFace;
+				myVector3D newVector;
+
+				newPoint = points.at(lastPoint);
+				newVertex.originof = &newHEdge;
+				newVertex.point = &newPoint;
+				newHEdge.source = &newVertex;
+				
+				//TODO: Vecteur normal
+				newVector.dX = 0;
+				newVector.dY = 0;
+				newVector.dZ = 0;
+
+				newFace.normal = &newVector;
+				newFace.adjacent_halfedge = &newHEdge;
+				newHEdge.adjacent_face = &newFace;
+
+				if (i != 1)
+				{
+					lastHEdge.next = &newHEdge;
+					newHEdge.prev = &lastHEdge;
+				}
+
+				map<pair<int, int>, myHalfedge*>::iterator it = twin_map.find(make_pair(lastPoint, currentPoint));
+				if (it == twin_map.end())
+				{
+					// This means there was no myHalfedge* present at location(a, b).
+					twin_map.insert(pair<pair<int, int>, myHalfedge*>(make_pair(lastPoint, currentPoint), &newHEdge));
+				}
+				else
+				{
+					// It was found.The variable it->second is of type myHalfedge*,
+					// and is the halfedge present at location(a, b).
+					newHEdge.twin = it->second;
+					it->second->twin = &newHEdge;
+				}
+				lastHEdge = newHEdge;
+				lastPoint = currentPoint;
+			}
 		}
 	}
 
