@@ -62,6 +62,7 @@ bool myMesh::readFile(std::string filename)
 	std::vector<myPoint3D> points;
 	map<pair<int, int>, myHalfedge *> twin_map;
 	map<pair<int, int>, myHalfedge *>::iterator it;
+	myHalfedge lastHEdge;
 
 	while (getline(fin, s))
 	{
@@ -98,7 +99,6 @@ bool myMesh::readFile(std::string filename)
 			int firstPoint = indexes.at(0);
 			int lastPoint = firstPoint;
 			int currentPoint;
-			myHalfedge lastHEdge;
 
 			for (int i = 1; i < indexes.size(); i++)
 			{
@@ -123,7 +123,7 @@ bool myMesh::readFile(std::string filename)
 				newFace.adjacent_halfedge = &newHEdge;
 				newHEdge.adjacent_face = &newFace;
 
-				if (i != 1)
+				if (twin_map.size() >= 0)
 				{
 					lastHEdge.next = &newHEdge;
 					newHEdge.prev = &lastHEdge;
