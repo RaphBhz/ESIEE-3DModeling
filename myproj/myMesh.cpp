@@ -48,8 +48,6 @@ void myMesh::checkMesh()
 bool myMesh::readFile(std::string filename)
 {
 	string s, t, u;
-	vector<int> faceids;
-	myHalfedge **hedges;
 
 	ifstream fin(filename);
 	if (!fin.is_open()) {
@@ -58,11 +56,11 @@ bool myMesh::readFile(std::string filename)
 	}
 	name = filename;
 
-	int i = 0;
-	std::vector<myPoint3D> points;
 	map<pair<int, int>, myHalfedge *> twin_map;
 	map<pair<int, int>, myHalfedge *>::iterator it;
-	myHalfedge lastHEdge;
+
+	// Temporary vector to store faces vertices ids.
+	vector<vector<int>> obj_faces;
 
 	while (getline(fin, s))
 	{
@@ -74,11 +72,11 @@ bool myMesh::readFile(std::string filename)
 			float x, y, z;
 			myline >> x >> y >> z;
 			cout << "v " << x << " " << y << " " << z << endl;
-			myPoint3D A;
-			A.X = x;
-			A.Y = y;
-			A.Z = z;
-			points.push_back(A);
+
+			// Registering the vertex.
+			auto* v = new myVertex();
+			v->point = new myPoint3D(x, y, z);
+			vertices.push_back(v);
 		}
 		else if (t == "mtllib") {}
 		else if (t == "usemtl") {}
@@ -86,66 +84,87 @@ bool myMesh::readFile(std::string filename)
 		else if (t == "f")
 		{
 			cout << "f";
-			std::vector<int> indexes;
 
+			// Reading the current face's vertices.
+			vector<int> face_ids;
 			while (myline >> u)
 			{
-				int idx = atoi((u.substr(0, u.find("/"))).c_str());
-				cout << " " << idx;
-				indexes.push_back(idx);
+				int vertex = atoi((u.substr(0, u.find("/"))).c_str());
+				cout << " " << vertex;
+
+				face_ids.push_back(vertex);
 			}
+			// Storing the new face as a series of vertices ids.
+			obj_faces.push_back(face_ids);
+
 			cout << endl;
-
-			int firstPoint = indexes.at(0);
-			int lastPoint = firstPoint;
-			int currentPoint;
-
-			for (int i = 1; i < indexes.size(); i++)
-			{
-				currentPoint = indexes.at(i);
-				myHalfedge newHEdge;
-				myVertex newVertex;
-				myPoint3D newPoint;
-				myFace newFace;
-				myVector3D newVector;
-
-				newPoint = points.at(lastPoint);
-				newVertex.originof = &newHEdge;
-				newVertex.point = &newPoint;
-				newHEdge.source = &newVertex;
-				
-				//TODO: Vecteur normal
-				newVector.dX = 0;
-				newVector.dY = 0;
-				newVector.dZ = 0;
-
-				newFace.normal = &newVector;
-				newFace.adjacent_halfedge = &newHEdge;
-				newHEdge.adjacent_face = &newFace;
-
-				if (twin_map.size() >= 0)
-				{
-					lastHEdge.next = &newHEdge;
-					newHEdge.prev = &lastHEdge;
-				}
-
-				map<pair<int, int>, myHalfedge*>::iterator it = twin_map.find(make_pair(lastPoint, currentPoint));
-				if (it == twin_map.end())
-				{
-					// This means there was no myHalfedge* present at location(a, b).
-					twin_map.insert(pair<pair<int, int>, myHalfedge*>(make_pair(lastPoint, currentPoint), &newHEdge));
-				}
-				else
-				{
-					// It was found.The variable it->second is of type myHalfedge*,
-					// and is the halfedge present at location(a, b).
-					newHEdge.twin = it->second;
-					it->second->twin = &newHEdge;
-				}
-				lastHEdge = newHEdge;
-				lastPoint = currentPoint;
-			}
 		}
+	}
+
+	// Rebuilding each face from its vertices.
+	for (const vector<int> &face_ids : obj_faces)
+	{
+		auto* new_face = new myFace();
+		// Registering the new face.
+		faces.push_back(new_face);
+
+		// Building the face's half-edges.
+		int n = static_cast<int>(face_ids.size());
+		for (int i = 0; i < n; i++)
+		{
+			// Building an edge from vertices indexes.
+			int idx1 = face_ids[i];
+			int idx2 = i < n ? face_ids[i+1] : face_ids[0];
+
+			// Creating the new half-edge.
+			auto* new_h_edge = new myHalfedge();
+			new_h_edge->adjacent_face = new_face;
+
+			// Retrieving the corresponding vertex and linking the half-edge with it.
+			vertices.at(idx1 - 1)->originof = new_h_edge;
+			new_h_edge->source = vertices.at(idx1 - 1);
+
+			// Linking previous and current half-edges together.
+			if (!halfedges.empty())
+			{
+				halfedges.back()->next = new_h_edge;
+				new_h_edge->prev = halfedges.back();
+			}
+
+			// Try to retrieve the current half-edge's twin.
+			it = twin_map.find(make_pair(idx2, idx1));
+			if (it == twin_map.end())
+			{
+				// This means there was no myHalfedge* present at location(a, b).
+				// Then we create an entry in the twin mapping.
+				twin_map.insert(pair<pair<int, int>, myHalfedge*>(make_pair(idx1, idx2), new_h_edge));
+			}
+			else
+			{
+				// It was found. The variable it->second is of type myHalfedge*,
+				// and is the half-edge present at location(a, b).
+				new_h_edge->twin = it->second;
+				it->second->twin = new_h_edge;
+			}
+
+			// Registering the half-edge.
+			halfedges.push_back(new_h_edge);
+		}
+
+		// Link the new face to a corresponding half-edge
+		new_face->adjacent_halfedge = halfedges.back();
+	}
+	// Link the last half-edge with the first to complete the loop.
+	halfedges.back()->next = halfedges.front();
+	halfedges.front()->prev = halfedges.back();
+
+	// Clear the temporary vector
+	obj_faces.clear();
+
+	int cpt = 0;
+	for (const myHalfedge* he : halfedges)
+	{
+		if (he->twin == nullptr) cpt++;
 	}
 
 	checkMesh();
