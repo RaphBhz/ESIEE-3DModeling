@@ -214,82 +214,11 @@ void myMesh::normalize()
 
 void myMesh::splitFaceTRIS(myFace* f, myPoint3D* p)
 {
-	myHalfedge* he = f->adjacent_halfedge;
-	myHalfedge* first_h1 = nullptr;
-	myHalfedge* last_h3 = nullptr;
-
-	while (true)
-	{
-		// Next half-edge
-		myHalfedge* next_he = he->next;
-
-		// Triangle's first half-edge.
-		auto* new_face = new myFace();
-		he->adjacent_face = new_face;
-		auto* h1 = new myHalfedge();
-		auto* v1 = new myVertex();
-		v1->point = p;
-		v1->originof = h1;
-
-		h1->index = 0;
-		h1->source = v1;
-		h1->adjacent_face = new_face;
-
-		// Triangle's third half-edge.
-		auto* h3 = new myHalfedge();
-		auto* v3 = new myVertex();
-		v3->point = p;
-		v3->originof = h3;
-
-		h3->index = 2;
-		h3->source = v3;
-		h3->adjacent_face = new_face;
-
-		// Connecting the half-edges together.
-		h1->prev = h3;
-		h1->next = he;
-		he->prev = h1;
-		he->next = h3;
-		h3->prev = he;
-		h3->next = h1;
-
-		// Connecting the new face with its half-edges.
-		new_face->adjacent_halfedge = h1;
-
-		// Registering the new face, half-edges and vertex.
-		faces.push_back(new_face);
-		vertices.push_back(v1);
-		vertices.push_back(v3);
-		halfedges.push_back(h1);
-		halfedges.push_back(h3);
-
-		// Determining newly created half-edges' twins
-		if (last_h3 != nullptr)
-		{
-			h1->twin = last_h3;
-			last_h3->twin = h1;
-		}
-
-		// Attributing first and last new half-edges' values for twin mapping
-		last_h3 = h3;
-		first_h1 = first_h1 == nullptr ? h1 : first_h1;
-
-		// Detecting the end of the loop.
-		if (next_he == f->adjacent_halfedge)
-		{
-			first_h1->prev = last_h3;
-			last_h3->next = first_h1;
-			break;
-		}
-
-		// Iterating through half-edges.
-		he = next_he;
-	}
+	/**** TODO ****/
 }
 
 void myMesh::splitEdge(myHalfedge* e1, myPoint3D* p)
 {
-
 	/**** TODO ****/
 }
 
@@ -307,23 +236,137 @@ void myMesh::subdivisionCatmullClark()
 
 void myMesh::triangulate()
 {
-	size_t size = faces.size();
+	// Newly created triangle faces.
+	vector<myFace*> new_faces;
+	vector<myHalfedge*> new_hes;
 
-	for (size_t i = 0; i < size; )
+	for (const auto face : faces)
 	{
-		myFace* face = faces.at(i);
 		if (triangulate(face))
 		{
-			// Splitting every non-triangle face into triangles
-			splitFaceTRIS(face, face->computeCenter());
+			// Setting non-triangle face to be deleted.
+			face->index = -1;
 
-			// Deleting the non-triangle face.
-			delete face;
-			faces.erase(next(faces.begin(), i));
-			size = faces.size();
+			// Splitting every non-triangle face into triangles.
+			myHalfedge* he = face->adjacent_halfedge;
+
+			// Storing first source for while loop end.
+			const myVertex* source = face->adjacent_halfedge->source;
+
+			// Variable for new triangle's twin determination.
+			myHalfedge* twin = nullptr;
+
+			// Center vertex
+			auto* v = new myVertex();
+			v->point = face->computeCenter();
+			v->originof = he;
+			vertices.push_back(v);
+
+			while (true)
+			{
+				// Storing next half-edge before modifying the current one.
+				myHalfedge* next_he = he->next;
+
+				// Triangle's first half-edge.
+				auto* new_face = new myFace();
+				new_face->index = 1;
+				he->adjacent_face = new_face;
+				auto* h1 = new myHalfedge();
+
+
+				h1->index = 0;
+				h1->source = v;
+				h1->adjacent_face = new_face;
+
+				// Triangle's third half-edge.
+				auto* h3 = new myHalfedge();
+
+				h3->index = 2;
+				h3->source = v;
+				h3->adjacent_face = new_face;
+
+				// Connecting the half-edges together.
+				//h1->prev = h3;
+				//h1->next = he;
+				//he->prev = h1;
+				//he->next = h3;
+				//h3->prev = he;
+				//h3->next = h1;
+				new_hes.push_back(h1);
+				new_hes.push_back(he);
+				new_hes.push_back(h3);
+
+				// Connecting the new face with its half-edges.
+				new_face->adjacent_halfedge = h1;
+
+				// Registering the new face, half-edges and vertex.
+				new_faces.push_back(new_face);
+				halfedges.push_back(h1);
+				halfedges.push_back(h3);
+
+				// Determining newly created half-edges' twins
+				if (twin != nullptr)
+				{
+					h1->twin = twin;
+					twin->twin = h1;
+				}
+
+				// Detecting the end of the loop.
+				if (source == next_he->source)
+				{
+					face->adjacent_halfedge->prev = he;
+					he->next = face->adjacent_halfedge;
+					break;
+				}
+
+				// Iterating through half-edges.
+				he = next_he;
+				twin = h3;
+			}
+
+			// Determining twin relationship between first and last created triangles.
+			const myFace* first = new_faces.at(0);
+			first->adjacent_halfedge->twin = he;
+			he->twin = first->adjacent_halfedge;
 		}
-		else { ++i; }
 	}
+
+	// Connecting the half-edges together.
+	for (int i = 0; i < new_hes.size(); i++)
+	{
+		myHalfedge* he = new_hes.at(i);
+		if (he->index == 0)
+		{
+			he->prev = new_hes.at(i + 2);
+			new_hes.at(i + 2)->next = he;
+			he->next = new_hes.at(i + 1);
+			new_hes.at(i + 1)->prev = he;
+		}
+		else if (he->index == 1)
+		{
+			he->prev = new_hes.at(i - 1);
+			new_hes.at(i - 1)->next = he;
+			he->next = new_hes.at(i + 1);
+			new_hes.at(i + 1)->prev = he;
+		}
+		else if (he->index == 2)
+		{
+			he->prev = new_hes.at(i - 1);
+			new_hes.at(i - 1)->next = he;
+			he->next = new_hes.at(i - 2);
+			new_hes.at(i - 2)->prev = he;
+		}
+	}
+
+	// Deleting old faces with index -1.
+	faces.erase(remove_if(faces.begin(), faces.end(), [&](const myFace* f) {
+		const bool res = f->index == -1;
+		delete f;
+		return res;
+		}), faces.end());
+
+	// Adding newly created faces.
+	faces.insert(faces.end(), new_faces.begin(), new_faces.end());
 }
 
 //return false if already triangle, true othewise.
