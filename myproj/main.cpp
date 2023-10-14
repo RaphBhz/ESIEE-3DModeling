@@ -16,18 +16,19 @@ using namespace std;
 #include "myvector3d.h"
 #include "myMesh.h"
 
-enum MENU { MENU_CATMULLCLARK, MENU_DRAWWIREFRAME, MENU_EXIT, MENU_DRAWMESH, MENU_LOOP, MENU_DRAWMESHVERTICES,
-	MENU_CONTRACTEDGE, MENU_CONTRACTFACE, MENU_DRAWCREASE, MENU_DRAWSILHOUETTE, 
+enum MENU {
+	MENU_CATMULLCLARK, MENU_DRAWWIREFRAME, MENU_EXIT, MENU_DRAWMESH, MENU_LOOP, MENU_DRAWMESHVERTICES,
+	MENU_CONTRACTEDGE, MENU_CONTRACTFACE, MENU_DRAWCREASE, MENU_DRAWSILHOUETTE,
 	MENU_GENERATE, MENU_CUT, MENU_INFLATE, MENU_SELECTEDGE, MENU_SELECTFACE, MENU_SELECTVERTEX,
-	MENU_SHADINGTYPE, MENU_SMOOTHEN, MENU_SPLITEDGE, MENU_SPLITFACE, MENU_SELECTCLEAR, 
+	MENU_SHADINGTYPE, MENU_SMOOTHEN, MENU_SPLITEDGE, MENU_SPLITFACE, MENU_SELECTCLEAR,
 	MENU_TRIANGULATE, MENU_UNDO, MENU_WRITE, MENU_SIMPLIFY, MENU_DRAWNORMALS, MENU_OPENFILE
 };
- 
-myMesh *m;
-myPoint3D *pickedpoint;
-myHalfedge *closest_edge;
-myVertex *closest_vertex;
-myFace *closest_face;
+
+myMesh* m;
+myPoint3D* pickedpoint;
+myHalfedge* closest_edge;
+myVertex* closest_vertex;
+myFace* closest_face;
 
 #include "helperFunctions.h"
 
@@ -41,130 +42,130 @@ void clear()
 
 void menu(int item)
 {
-	switch(item)
+	switch (item)
 	{
 	case MENU_TRIANGULATE:
-		{
-			m->triangulate();
-			m->computeNormals();
-			makeBuffers(m);
-			break;
-		}
+	{
+		m->triangulate();
+		m->computeNormals();
+		makeBuffers(m);
+		break;
+	}
 	case MENU_SHADINGTYPE:
-		{
-			smooth = !smooth;
-			break;
-		}
+	{
+		smooth = !smooth;
+		break;
+	}
 	case MENU_DRAWMESH:
-		{
-			drawmesh = !drawmesh;
-			break;
-		}
+	{
+		drawmesh = !drawmesh;
+		break;
+	}
 	case MENU_DRAWMESHVERTICES:
-		{
-			drawmeshvertices = !drawmeshvertices;
-			break;
-		}
+	{
+		drawmeshvertices = !drawmeshvertices;
+		break;
+	}
 	case MENU_DRAWWIREFRAME:
-		{
-			drawwireframe = !drawwireframe;
-			break;
-		}
+	{
+		drawwireframe = !drawwireframe;
+		break;
+	}
 	case MENU_DRAWNORMALS:
-		{
-			drawnormals = !drawnormals;
-			break;
-		}
+	{
+		drawnormals = !drawnormals;
+		break;
+	}
 	case MENU_DRAWSILHOUETTE:
-		{
-			drawsilhouette = !drawsilhouette;
-			break;
-		}
+	{
+		drawsilhouette = !drawsilhouette;
+		break;
+	}
 	case MENU_SELECTCLEAR:
-		{
-			clear();
-			break;
-		}
+	{
+		clear();
+		break;
+	}
 	case MENU_SELECTEDGE:
+	{
+		if (pickedpoint == NULL) break;
+		closest_edge = (*m->halfedges.begin());
+		double min = std::numeric_limits<double>::max();
+		for (vector<myHalfedge*>::iterator it = m->halfedges.begin(); it != m->halfedges.end(); it++)
 		{
-			if (pickedpoint == NULL) break;
-			closest_edge = (*m->halfedges.begin());
-			double min = std::numeric_limits<double>::max();
-			for (vector<myHalfedge *>::iterator it = m->halfedges.begin(); it != m->halfedges.end(); it++)
-			{
-				myHalfedge *e = (*it);
-				myVertex *v1 = (*it)->source;
-				if ((*it)->twin == NULL) continue;
-				myVertex *v2 = (*it)->twin->source;
+			myHalfedge* e = (*it);
+			myVertex* v1 = (*it)->source;
+			if ((*it)->twin == NULL) continue;
+			myVertex* v2 = (*it)->twin->source;
 
-				double d = pickedpoint->dist(v1->point, v2->point);
-				if (d < min) { min = d; closest_edge = e; } 
-			}
-			break;
+			double d = pickedpoint->dist(v1->point, v2->point);
+			if (d < min) { min = d; closest_edge = e; }
 		}
+		break;
+	}
 	case MENU_SELECTVERTEX:
+	{
+		if (pickedpoint == NULL) break;
+		closest_vertex = (*m->vertices.begin());
+		double min = std::numeric_limits<double>::max();
+		for (vector<myVertex*>::iterator it = m->vertices.begin(); it != m->vertices.end(); it++)
 		{
-			if (pickedpoint == NULL) break;
-			closest_vertex = (*m->vertices.begin());
-			double min = std::numeric_limits<double>::max();
-			for (vector<myVertex *>::iterator it = m->vertices.begin(); it != m->vertices.end(); it++)
-			{
-				double d = pickedpoint->dist(*( (*it)->point ));
-				if (d<min) { min = d; closest_vertex = *it; }
-			}
-			break;
+			double d = pickedpoint->dist(*((*it)->point));
+			if (d < min) { min = d; closest_vertex = *it; }
 		}
+		break;
+	}
 	case MENU_INFLATE:
-		{
-			for (vector<myVertex *>::iterator it = m->vertices.begin(); it != m->vertices.end(); it++)
-				*((*it)->point) = *((*it)->point) + *((*it)->normal)*0.01;
-			makeBuffers(m);
-			break;
+	{
+		for (vector<myVertex*>::iterator it = m->vertices.begin(); it != m->vertices.end(); it++)
+			*((*it)->point) = *((*it)->point) + *((*it)->normal) * 0.01;
+		makeBuffers(m);
+		break;
 	}
 	case MENU_CATMULLCLARK:
-		{
-			m->subdivisionCatmullClark();
-			clear();
-			m->computeNormals();
-			makeBuffers(m);
-			break;
-		}
+	{
+		m->subdivisionCatmullClark();
+		clear();
+		m->computeNormals();
+		makeBuffers(m);
+		break;
+	}
 	case MENU_SPLITEDGE:
-		{
-			if (pickedpoint != NULL && closest_edge != NULL)	
-				m->splitEdge(closest_edge, pickedpoint);
-			clear();
-			m->computeNormals();
-			makeBuffers(m);
-			break;
-		}		
+	{
+		if (pickedpoint != NULL && closest_edge != NULL)
+			m->splitEdge(closest_edge, pickedpoint);
+		clear();
+		m->computeNormals();
+		makeBuffers(m);
+		break;
+	}
 	case MENU_SPLITFACE:
-		{
-			if (pickedpoint != NULL && closest_face != NULL)	
-				m->splitFaceTRIS(closest_face, pickedpoint);
-			clear();		
-			m->computeNormals();
-			makeBuffers(m);
-			break;
-		}
+	{
+		if (pickedpoint != NULL && closest_face != NULL)
+			m->splitFaceTRIS(closest_face, pickedpoint);
+		clear();
+		m->computeNormals();
+		makeBuffers(m);
+		break;
+	}
 	case MENU_OPENFILE:
-	    {
-			nfdchar_t *outPath = NULL;
-			nfdresult_t result = NFD_OpenDialog("obj", NULL, &outPath);
-			m->clear();
-			m->readFile(outPath);
-			m->computeNormals();
-			makeBuffers(m);
-			break;
-	    }
+	{
+		nfdchar_t* outPath = NULL;
+		nfdresult_t result = NFD_OpenDialog("obj", NULL, &outPath);
+		m->clear();
+		m->readFile(outPath);
+		m->computeNormals();
+		makeBuffers(m);
+		break;
+	}
 	case MENU_EXIT:
-		{
-			m->clear();
-			glDeleteBuffers(10, &buffers[0]);
-			glDeleteVertexArrays(10, &vaos[0]);
-			exit(0);
-			break;
-		}
+	{
+		m->clear();
+		glDeleteBuffers(10, &buffers[0]);
+		glDeleteVertexArrays(10, &vaos[0]);
+		exit(0);
+		break;
+	}
 	}
 	glutPostRedisplay();
 }
@@ -173,7 +174,7 @@ void menu(int item)
 
 
 //This function is called to display objects on screen.
-void display() 
+void display()
 {
 	//Clearing the color on the screen.
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -185,19 +186,19 @@ void display()
 		1, GL_FALSE, &projection_matrix[0][0]);
 
 	glm::mat4 view_matrix = glm::lookAt(glm::vec3(camera_eye.X, camera_eye.Y, camera_eye.Z),
-										glm::vec3(camera_eye.X + camera_forward.dX, camera_eye.Y + camera_forward.dY, camera_eye.Z + camera_forward.dZ),
-										glm::vec3(camera_up.dX, camera_up.dY, camera_up.dZ));
+		glm::vec3(camera_eye.X + camera_forward.dX, camera_eye.Y + camera_forward.dY, camera_eye.Z + camera_forward.dZ),
+		glm::vec3(camera_up.dX, camera_up.dY, camera_up.dZ));
 	glUniformMatrix4fv(glGetUniformLocation(shaderprogram, "myview_matrix"),
 		1, GL_FALSE, &view_matrix[0][0]);
 
 	glm::mat3 normal_matrix = glm::transpose(glm::inverse(glm::mat3(view_matrix)));
 	glUniformMatrix3fv(glGetUniformLocation(shaderprogram, "mynormal_matrix"),
 		1, GL_FALSE, &normal_matrix[0][0]);
- 
-	vector<GLfloat> color; 
+
+	vector<GLfloat> color;
 	color.resize(4);
 
-	if ( (drawmesh && vaos[VAO_TRIANGLES_NORMSPERVERTEX]) || drawsilhouette)
+	if ((drawmesh && vaos[VAO_TRIANGLES_NORMSPERVERTEX]) || drawsilhouette)
 	{
 		glLineWidth(1.0);
 		glEnable(GL_POLYGON_OFFSET_FILL); glPolygonOffset(2.0f, 2.0f); //for z-bleeding, z-fighting.
@@ -212,7 +213,7 @@ void display()
 			glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
 			glBindVertexArray(0);
 		}
-		else 
+		else
 		{
 			glBindVertexArray(vaos[VAO_TRIANGLES_NORMSPERFACE]);
 			glDrawArrays(GL_TRIANGLES, 0, num_triangles * 3);
@@ -226,7 +227,7 @@ void display()
 	if (drawmeshvertices && vaos[VAO_VERTICES])
 	{
 		glPointSize(4.0);
-		color[0] = 0.0f, color[1] = 0.0f, color[2] = 0.0f, color[3] = 1.0f;		
+		color[0] = 0.0f, color[1] = 0.0f, color[2] = 0.0f, color[3] = 1.0f;
 		glUniform4fv(glGetUniformLocation(shaderprogram, "kd"), 1, &color[0]);
 
 		glBindVertexArray(vaos[VAO_VERTICES]);
@@ -237,33 +238,33 @@ void display()
 	if (drawwireframe && vaos[VAO_EDGES])
 	{
 		glLineWidth(2.0);
-		color[0] = 0.0f, color[1] = 0.0f, color[2] = 0.0f, color[3] = 1.0f;		
-        glUniform4fv(glGetUniformLocation(shaderprogram, "kd"), 1, &color[0]);
+		color[0] = 0.0f, color[1] = 0.0f, color[2] = 0.0f, color[3] = 1.0f;
+		glUniform4fv(glGetUniformLocation(shaderprogram, "kd"), 1, &color[0]);
 		glBindVertexArray(vaos[VAO_EDGES]);
-		glDrawElements(GL_LINES, m->halfedges.size()*2, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_LINES, m->halfedges.size() * 2, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	}
 
 	if (drawsilhouette)
 	{
 		glLineWidth(4.0);
-		color[0] = 1.0f, color[1] = 0.0f, color[2] = 0.0f, color[3] = 1.0f;		
+		color[0] = 1.0f, color[1] = 0.0f, color[2] = 0.0f, color[3] = 1.0f;
 		glUniform4fv(glGetUniformLocation(shaderprogram, "kd"), 1, &color[0]);
 
 		vector <GLuint> silhouette_edges;
-		for (vector<myHalfedge *>::iterator it = m->halfedges.begin(); it != m->halfedges.end(); it++)
+		for (vector<myHalfedge*>::iterator it = m->halfedges.begin(); it != m->halfedges.end(); it++)
 		{
 			/**** TODO: WRITE CODE TO COMPUTE SILHOUETTE ****/
-			myHalfedge *e = (*it);
-			myVertex *v1 = (*it)->source;
+			myHalfedge* e = (*it);
+			myVertex* v1 = (*it)->source;
 			if ((*it)->twin == NULL) continue;
-			myVertex *v2 = (*it)->twin->source;
+			myVertex* v2 = (*it)->twin->source;
 
-			if ( 0 /*ADD THE CONDITION TO CHECK IF THE HALFEDGE DEFINED BY (V1, V2) IS A SILHOUETTE EDGE*/ )
+			if (0 /*ADD THE CONDITION TO CHECK IF THE HALFEDGE DEFINED BY (V1, V2) IS A SILHOUETTE EDGE*/)
 			{
 				silhouette_edges.push_back(v1->index);
 				silhouette_edges.push_back(v2->index);
-			}				
+			}
 		}
 
 		GLuint silhouette_edges_buffer;
@@ -284,16 +285,16 @@ void display()
 		glDrawElements(GL_LINES, silhouette_edges.size(), GL_UNSIGNED_INT, 0);
 
 		glDeleteBuffers(1, &silhouette_edges_buffer);
- 	}
+	}
 
 	if (drawnormals && vaos[VAO_NORMALS])
 	{
 		glLineWidth(1.0);
-		color[0] = 0.2f, color[1] = 0.2f, color[2] = 0.2f, color[3] = 1.0f;		
+		color[0] = 0.2f, color[1] = 0.2f, color[2] = 0.2f, color[3] = 1.0f;
 		glUniform4fv(glGetUniformLocation(shaderprogram, "kd"), 1, &color[0]);
 
 		glBindVertexArray(vaos[VAO_NORMALS]);
-		glDrawArrays(GL_LINES, 0, m->vertices.size()*2 );
+		glDrawArrays(GL_LINES, 0, m->vertices.size() * 2);
 		glBindVertexArray(0);
 	}
 
@@ -302,7 +303,7 @@ void display()
 		glUseProgram(0);
 		glPointSize(8.0);
 		glBegin(GL_POINTS);
-		glColor3f(1,0,1);
+		glColor3f(1, 0, 1);
 		glVertex3f((float)pickedpoint->X, (float)pickedpoint->Y, (float)pickedpoint->Z);
 		glEnd();
 		glUseProgram(shaderprogram);
@@ -313,7 +314,7 @@ void display()
 		glUseProgram(0);
 		glLineWidth(4.0);
 		glBegin(GL_LINES);
-		glColor3f(1,0,1);
+		glColor3f(1, 0, 1);
 		glVertex3f((float)closest_edge->source->point->X, (float)closest_edge->source->point->Y, (float)closest_edge->source->point->Z);
 		glVertex3f((float)closest_edge->twin->source->point->X, (float)closest_edge->twin->source->point->Y, (float)closest_edge->twin->source->point->Z);
 		glEnd();
@@ -325,7 +326,7 @@ void display()
 		glUseProgram(0);
 		glPointSize(8.0);
 		glBegin(GL_POINTS);
-		glColor3f(0,0,0);
+		glColor3f(0, 0, 0);
 		glVertex3f((float)closest_vertex->point->X, (float)closest_vertex->point->Y, (float)closest_vertex->point->Z);
 		glEnd();
 		glUseProgram(shaderprogram);
@@ -335,9 +336,9 @@ void display()
 	{
 		glUseProgram(0);
 		glBegin(GL_TRIANGLES);
-		glColor3f(0.1f,0.1f,0.9f);
-		myHalfedge *e = closest_face->adjacent_halfedge;
-		myVertex *v;
+		glColor3f(0.1f, 0.1f, 0.9f);
+		myHalfedge* e = closest_face->adjacent_halfedge;
+		myVertex* v;
 		myVector3D r;
 
 		v = e->source;
@@ -350,14 +351,14 @@ void display()
 		glEnd();
 		glUseProgram(shaderprogram);
 	}
- 
+
 
 	color[0] = 0.0f, color[1] = 0.0f, color[2] = 0.0f;
-	draw_text(0.0f, 1.0f, 0, "Vertices:    " + to_string(static_cast<long long>(m->vertices.size())), color );
-	draw_text(0.0f,22.0f, 0,"Halfedges: " + to_string(static_cast<long long>(m->halfedges.size())), color );
-	draw_text(0.0f,41.0f, 0,"Faces:       " + to_string(static_cast<long long>(m->faces.size())), color );
+	draw_text(0.0f, 1.0f, 0, "Vertices:    " + to_string(static_cast<long long>(m->vertices.size())), color);
+	draw_text(0.0f, 22.0f, 0, "Halfedges: " + to_string(static_cast<long long>(m->halfedges.size())), color);
+	draw_text(0.0f, 41.0f, 0, "Faces:       " + to_string(static_cast<long long>(m->faces.size())), color);
 	color[0] = 0.9f;
-	draw_text(Glut_w - 150.0f, Glut_h - 20.0f, 0, "FPS:       " + to_string(static_cast<long long>( fps)), color );
+	draw_text(Glut_w - 150.0f, Glut_h - 20.0f, 0, "FPS:       " + to_string(static_cast<long long>(fps)), color);
 
 	glFlush();
 }
@@ -373,12 +374,13 @@ void initMesh()
 	m = new myMesh();
 	if (m->readFile("dolphin.obj")) {
 		m->computeNormals();
+		m->triangulate();
 		makeBuffers(m);
 	}
 }
 
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	initInterface(argc, argv);
 
