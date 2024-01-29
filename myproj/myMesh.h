@@ -24,9 +24,17 @@ public:
 
 	void splitEdge(myHalfedge *, myPoint3D *);
 	void splitFaceQUADS(myFace *, myPoint3D *);
-
+	void collapse(const int count);
+	void cleanValues();
+	void checkValues() const;
+	template <typename T>
+	int validate(std::vector<T> v);
+	void validate_mesh();
+	void swap_old_objects(myVertex* new_vertex);
+	void collapse_half_edge(myHalfedge* he, myVertex* new_vertex);
+	void collapse(double threshold);
 	void triangulate();
-	bool triangulate(myFace *);
+	static bool triangulate(myFace *);
 
 	void clear();
 
@@ -34,3 +42,8 @@ public:
 	~myMesh(void);
 };
 
+
+class invalid_mesh_exception final : public std::exception {
+public:
+	invalid_mesh_exception(const char* str) : exception(str){}
+};

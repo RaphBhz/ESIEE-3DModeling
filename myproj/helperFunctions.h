@@ -356,12 +356,12 @@ bool PickedPoint(int x, int y)
 		}
 
 		// Return hit
-		//cout << "true\n";
+		//std::cout << "true\n";
 		return true;
 	}
 	else {
 		// Return no hit
-		//cout << "false\n";
+		//std::cout << "false\n";
 		return false;
 	}
 }
@@ -511,7 +511,7 @@ void keyboard(unsigned char key, int x, int y) {
 	case 'm':
 		break;
 	case 'h':
-		cout << "The keys for various algorithms are:\n";
+		std::cout << "The keys for various algorithms are:\n";
 		break;
 	}
 	glutPostRedisplay();
@@ -562,7 +562,12 @@ void initInterface(int argc, char* argv[])
 	glutAddMenuEntry("Loop subdivision", MENU_LOOP);
 	glutAddMenuEntry("Inflate", MENU_INFLATE);
 	glutAddMenuEntry("Smoothen", MENU_SMOOTHEN);
+
+	int simpMenu = glutCreateMenu(menu);
 	glutAddMenuEntry("Simplification", MENU_SIMPLIFY);
+	glutAddMenuEntry("Simplification 10", MENU_SIMPLIFY_10);
+	glutAddMenuEntry("Simplification 20", MENU_SIMPLIFY_20);
+	glutAddMenuEntry("Simplification 30", MENU_SIMPLIFY_30);
 
 	int sm3 = glutCreateMenu(menu);
 	glutAddMenuEntry("Closest Edge", MENU_SELECTEDGE);
@@ -576,11 +581,20 @@ void initInterface(int argc, char* argv[])
 	glutAddMenuEntry("Contract edge", MENU_CONTRACTEDGE);
 	glutAddMenuEntry("Contract face", MENU_CONTRACTFACE);
 
+	int tests = glutCreateMenu(menu);
+	glutAddMenuEntry("Test easy", MENU_TEST_1);
+	glutAddMenuEntry("Test medium", MENU_TEST_2);
+	glutAddMenuEntry("Test advanced", MENU_TEST_3);
+	glutAddMenuEntry("Test hard (1 min.)", MENU_TEST_4);
+	glutAddMenuEntry("Test extreme (5 mins.)", MENU_TEST_5);
+
 	int m = glutCreateMenu(menu);
 	glutAddSubMenu("Draw", sm1);
 	glutAddSubMenu("Mesh Operations", sm2);
+	glutAddSubMenu("Simplify", simpMenu);
 	glutAddSubMenu("Select", sm3);
 	glutAddSubMenu("Face Operations", sm4);
+	glutAddSubMenu("Stress Tests", tests);
 	glutAddMenuEntry("Open File", MENU_OPENFILE);
 	glutAddMenuEntry("Triangulate", MENU_TRIANGULATE);
 	glutAddMenuEntry("Write to File", MENU_WRITE);
@@ -618,7 +632,7 @@ string textFileRead(const char * filename) {
 			ret += str + "\n";
 			getline(in, str);
 		}
-		//    cout << "Shader below\n" << ret << "\n" ; 
+		//    std::cout << "Shader below\n" << ret << "\n" ; 
 		return ret;
 	}
 	else {
@@ -633,7 +647,7 @@ void programerrors(const GLint program) {
 	glGetProgramiv(program, GL_INFO_LOG_LENGTH, &length);
 	log = new GLchar[length + 1];
 	glGetProgramInfoLog(program, length, &length, log);
-	cout << "Compile Error, Log Below\n" << log << "\n";
+	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
 }
 void shadererrors(const GLint shader) {
@@ -642,7 +656,7 @@ void shadererrors(const GLint shader) {
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
 	log = new GLchar[length + 1];
 	glGetShaderInfoLog(shader, length, &length, log);
-	cout << "Compile Error, Log Below\n" << log << "\n";
+	std::cout << "Compile Error, Log Below\n" << log << "\n";
 	delete[] log;
 }
 
